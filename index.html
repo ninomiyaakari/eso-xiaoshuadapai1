@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --pink: #FF6EB4;
+    --pink-light: #FFB3D9;
+    --pink-pale: #FFE4F2;
+    --blue: #4FC3F7;
+    --blue-light: #B3E5FC;
+    --jelly-shadow: 0 6px 24px rgba(255,110,180,0.2), 0 2px 8px rgba(79,195,247,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    min-height: 100vh; height: 100%;
+    background: linear-gradient(135deg, #FFE4F2 0%, #E1F5FE 50%, #FFE4F2 100%);
+    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; position: relative;
+  }
+  .bg-bubble {
+    position: fixed; border-radius: 50%; opacity: 0.12; pointer-events: none;
+    animation: float 6s ease-in-out infinite;
+  }
+  .bg-bubble:nth-child(1) { width: 280px; height: 280px; background: var(--pink); top: -80px; left: -80px; }
+  .bg-bubble:nth-child(2) { width: 180px; height: 180px; background: var(--blue); bottom: -50px; right: -50px; animation-delay: 2s; }
+  .bg-bubble:nth-child(3) { width: 130px; height: 130px; background: var(--pink-light); top: 50%; right: -40px; animation-delay: 4s; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-16px) scale(1.04); }
+  }
+
+  .container {
+    display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+    width: 100%; max-width: 480px; height: 100vh; max-height: 100vh;
+    margin: 0 auto; padding: 14px 16px;
+    position: relative; z-index: 1;
+  }
+
+  /* 标题 */
+  .title-block { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .title {
+    font-size: clamp(22px, 5.5vw, 34px); color: var(--pink); font-weight: 900;
+    text-shadow: 2px 2px 0 var(--blue-light), 4px 4px 0 rgba(255,110,180,0.2);
+    letter-spacing: 2px; line-height: 1.2; text-align: center;
+  }
+  .subtitle { font-size: clamp(12px, 2.5vw, 15px); color: #FF6EB4; opacity: 0.85; letter-spacing: 1px; text-align: center; }
+
+  /* 轮数 */
+  .round-bar { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .round-text { font-size: clamp(12px, 2.5vw, 14px); font-weight: 700; color: var(--pink); letter-spacing: 1px; text-align: center; }
+  .round-dots { display: flex; gap: 5px; }
+  .round-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pink-light); border: 2px solid var(--pink-light); transition: all 0.3s; }
+  .round-dot.done { background: var(--pink); border-color: var(--pink); box-shadow: 0 0 5px rgba(255,110,180,0.5); }
+  .round-dot.current { background: white; border-color: var(--pink); box-shadow: 0 0 7px rgba(255,110,180,0.6); transform: scale(1.2); }
+
+  /* ── 记分板：重新设计 ── */
+  .scoreboard {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+  }
+
+  .player-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    background: white;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--jelly-shadow);
+    border: 2px solid var(--pink-light);
+  }
+
+  /* 顶部彩色条 */
+  .player-col::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--pink), var(--blue));
+    flex-shrink: 0;
+  }
+
+  /* 玩家名+分数区 */
+  .player-info {
+    width: 100%;
+    padding: clamp(8px, 2vw, 14px) 4px clamp(6px, 1.5vw, 10px);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    border-bottom: 1.5px solid #FFF0F8;
+  }
+  .player-name {
+    font-size: clamp(10px, 2.2vw, 13px); font-weight: 700;
+    color: #C0A0B0; letter-spacing: 1px; text-align: center;
+  }
+  .player-score {
+    font-size: clamp(28px, 6.5vw, 38px); font-weight: 900; color: var(--pink);
+    line-height: 1; text-shadow: 2px 2px 0 var(--blue-light);
+    transition: transform 0.2s; text-align: center;
+  }
+  .player-score.bump { transform: scale(1.35); }
+
+  /* 按钮区 */
+  .player-btns {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .score-btn-normal {
+    width: 100%;
+    padding: clamp(7px, 1.8vw, 11px) 4px;
+    border: none;
+    border-bottom: 1px solid rgba(255,179,217,0.25);
+    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    font-size: clamp(10px, 2.2vw, 12px); font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, #FFF5FA, #FFE8F4);
+    color: var(--pink);
+    transition: all 0.15s; text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .score-btn-normal:hover:not(:disabled) { background: linear-gradient(135deg, #FFE8F4, #FFD6EC); }
+  .score-btn-normal:active:not(:disabled) { background: #FFD0E8; }
+  .score-btn-normal:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .score-btn-hoshi {
+    width: 100%;
+    padding: clamp(7px, 1.8vw, 11px) 4px;
+    border: none;
+    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    font-size: clamp(10px, 2.2vw, 12px); font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, #F0FBFF, #E0F6FF);
+    color: #0090C0;
+    transition: all 0.15s; text-align: center;
+    letter-spacing: 0.5px;
+    border-radius: 0 0 16px 16px;
+  }
+  .score-btn-hoshi:hover:not(:disabled) { background: linear-gradient(135deg, #E0F6FF, #C8EFFF); }
+  .score-btn-hoshi:active:not(:disabled) { background: #C0EAFF; }
+  .score-btn-hoshi:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* 轮盘区 */
+  .wheel-section { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .wheel-wrapper {
+    position: relative;
+    width: min(220px, 50vw, 36vh);
+    height: min(220px, 50vw, 36vh);
+    flex-shrink: 0;
+  }
+  .wheel-outer {
+    width: 100%; height: 100%; border-radius: 50%; padding: 6px;
+    background: linear-gradient(135deg, var(--pink-light), var(--blue-light), var(--pink-light));
+    box-shadow: var(--jelly-shadow), inset 0 2px 8px rgba(255,255,255,0.6);
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: var(--jelly-shadow), inset 0 2px 8px rgba(255,255,255,0.6); }
+    50% { box-shadow: 0 10px 32px rgba(255,110,180,0.3), 0 3px 10px rgba(79,195,247,0.18), inset 0 2px 8px rgba(255,255,255,0.6); }
+  }
+  canvas { border-radius: 50%; display: block; width: 100%; height: 100%; }
+  .pointer {
+    position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent;
+    border-top: 24px solid var(--pink); filter: drop-shadow(0 3px 6px rgba(255,110,180,0.5)); z-index: 10;
+  }
+  .pointer::after {
+    content: ''; position: absolute; top: -26px; left: -8px;
+    width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent;
+    border-top: 16px solid white;
+  }
+  .center-circle {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 40px; height: 40px; border-radius: 50%; background: var(--pink);
+    box-shadow: 0 3px 12px rgba(255,110,180,0.4), inset 0 2px 4px rgba(255,255,255,0.3); z-index: 10;
+  }
+
+  /* 开始/下一轮按钮 */
+  .action-btn {
+    background: linear-gradient(135deg, var(--pink) 0%, #FF8CC8 50%, var(--blue) 100%);
+    color: white; border: none; border-radius: 50px;
+    padding: clamp(10px,2vw,14px) clamp(28px,7vw,44px);
+    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    font-size: clamp(13px, 3vw, 17px); font-weight: 700; letter-spacing: 2px;
+    cursor: pointer; box-shadow: 0 5px 0 #CC4490, 0 8px 20px rgba(255,110,180,0.35);
+    transition: all 0.15s; position: relative; overflow: hidden; display: block; margin: 0 auto;
+  }
+  .action-btn::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%; background: rgba(255,255,255,0.2); border-radius: 50px 50px 0 0; }
+  .action-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #CC4490, 0 12px 28px rgba(255,110,180,0.45); }
+  .action-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #CC4490; }
+  .action-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  /* 判定弹窗 */
+  .result-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, rgba(255,110,180,0.95) 0%, rgba(79,195,247,0.95) 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; cursor: pointer;
+  }
+  .result-overlay.show { opacity: 1; pointer-events: all; }
+  .result-card {
+    background: white; border-radius: 28px; padding: clamp(24px,5vw,36px) clamp(24px,6vw,40px);
+    box-shadow: 0 16px 50px rgba(255,110,180,0.4), 0 0 0 7px rgba(255,255,255,0.3);
+    transform: scale(0.5) rotate(-5deg); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 85vw; display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  .result-overlay.show .result-card { transform: scale(1) rotate(0deg); }
+  .result-emoji { font-size: clamp(40px,10vw,52px); margin-bottom: 10px; animation: bounce 0.6s ease infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+  .result-label { font-size: 12px; color: var(--pink); letter-spacing: 3px; font-weight: 700; margin-bottom: 8px; width: 100%; text-align: center; }
+  .result-text { font-size: clamp(18px, 4.5vw, 26px); color: #333; line-height: 1.3; margin-bottom: 4px; font-weight: 900; width: 100%; text-align: center; }
+  .result-options { font-size: clamp(13px, 3vw, 15px); color: var(--blue); font-weight: 700; margin-top: 4px; width: 100%; text-align: center; }
+  .tap-hint { color: rgba(255,255,255,0.85); font-size: clamp(11px,2.5vw,13px); margin-top: 18px; letter-spacing: 2px; animation: blink 1.5s ease infinite; text-align: center; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* 最终弹窗 */
+  .final-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, rgba(255,110,180,0.97) 0%, rgba(79,195,247,0.97) 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 20px;
+  }
+  .final-overlay.show { opacity: 1; pointer-events: all; }
+  .final-card {
+    background: white; border-radius: 28px; padding: clamp(24px,5vw,36px) clamp(24px,6vw,32px);
+    box-shadow: 0 16px 50px rgba(255,110,180,0.4), 0 0 0 7px rgba(255,255,255,0.3);
+    transform: scale(0.5); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .final-overlay.show .final-card { transform: scale(1); }
+  .final-title { font-size: clamp(18px,4vw,22px); font-weight: 900; color: var(--pink); text-shadow: 2px 2px 0 var(--blue-light); text-align: center; }
+  .final-subtitle { font-size: 12px; color: #ccc; text-align: center; margin-bottom: 8px; }
+  .final-scores { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .final-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #FFF8FC; border-radius: 12px; border: 2px solid var(--pink-light); }
+  .final-row.winner-row { background: linear-gradient(135deg, #FFF0F8, #F0FAFF); border-color: var(--pink); box-shadow: 0 0 0 2px var(--pink); }
+  .final-name { font-size: 14px; font-weight: 700; color: #555; text-align: left; }
+  .final-score-val { font-size: 22px; font-weight: 900; color: var(--pink); text-align: right; }
+  .reset-btn {
+    background: linear-gradient(135deg, var(--pink), var(--blue));
+    color: white; border: none; border-radius: 50px; padding: 12px 40px;
+    font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+    font-size: clamp(13px,3vw,16px); font-weight: 700; letter-spacing: 2px;
+    cursor: pointer; box-shadow: 0 4px 0 #CC4490; position: relative; overflow: hidden; transition: all 0.15s;
+  }
+  .reset-btn::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%; background: rgba(255,255,255,0.2); border-radius: 50px 50px 0 0; }
+  .reset-btn:hover { transform: translateY(-2px); }
+  .reset-btn:active { transform: translateY(3px); }
+
+  .star { position: fixed; font-size: 22px; animation: star-float 1s ease-out forwards; pointer-events: none; z-index: 300; }
+  @keyframes star-float { 0% { transform: translateY(0) scale(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-130px) scale(1.4) rotate(180deg); opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="bg-bubble"></div>
+<div class="bg-bubble"></div>
+<div class="bg-bubble"></div>
+
+<div class="container">
+  <!-- 标题 -->
+  <div class="title-block">
+    <div class="title">✦ 判定轮盘 ✦</div>
+    <div class="subtitle">小耍大牌 · 判定牌抽选</div>
+  </div>
+
+  <!-- 轮数 -->
+  <div class="round-bar">
+    <div class="round-text" id="roundText">第 1 / 5 轮</div>
+    <div class="round-dots" id="roundDots"></div>
+  </div>
+
+  <!-- 记分板：每列一体式卡片 -->
+  <div class="scoreboard">
+    <div class="player-col" id="col0">
+      <div class="player-info">
+        <div class="player-name">玩家 1</div>
+        <div class="player-score" id="score0">0</div>
+      </div>
+      <div class="player-btns">
+        <button class="score-btn-normal" id="n0" onclick="addScore(0,1)" disabled>普通 +1</button>
+        <button class="score-btn-hoshi" id="h0" onclick="addScore(0,3)" disabled>扁面硝 +3</button>
+      </div>
+    </div>
+    <div class="player-col" id="col1">
+      <div class="player-info">
+        <div class="player-name">玩家 2</div>
+        <div class="player-score" id="score1">0</div>
+      </div>
+      <div class="player-btns">
+        <button class="score-btn-normal" id="n1" onclick="addScore(1,1)" disabled>普通 +1</button>
+        <button class="score-btn-hoshi" id="h1" onclick="addScore(1,3)" disabled>扁面硝 +3</button>
+      </div>
+    </div>
+    <div class="player-col" id="col2">
+      <div class="player-info">
+        <div class="player-name">玩家 3</div>
+        <div class="player-score" id="score2">0</div>
+      </div>
+      <div class="player-btns">
+        <button class="score-btn-normal" id="n2" onclick="addScore(2,1)" disabled>普通 +1</button>
+        <button class="score-btn-hoshi" id="h2" onclick="addScore(2,3)" disabled>扁面硝 +3</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轮盘 + 按钮 -->
+  <div class="wheel-section">
+    <div class="wheel-wrapper">
+      <div class="pointer"></div>
+      <div class="wheel-outer"><canvas id="wheel"></canvas></div>
+      <div class="center-circle"></div>
+    </div>
+    <button class="action-btn" id="actionBtn" onclick="handleAction()">开始</button>
+  </div>
+</div>
+
+<!-- 判定弹窗 -->
+<div class="result-overlay" id="resultOverlay" onclick="closeResult()">
+  <div class="result-card">
+    <div class="result-emoji" id="resultEmoji">🎯</div>
+    <div class="result-label">本轮判定</div>
+    <div class="result-text" id="resultText"></div>
+    <div class="result-options" id="resultOptions"></div>
+  </div>
+  <div class="tap-hint">点击任意位置关闭</div>
+</div>
+
+<!-- 最终结果弹窗 -->
+<div class="final-overlay" id="finalOverlay">
+  <div class="final-card">
+    <div class="final-title">🎉 游戏结束！</div>
+    <div class="final-subtitle">五轮战罢，最终比分</div>
+    <div class="final-scores" id="finalScores"></div>
+    <button class="reset-btn" onclick="resetGame()">重新开始</button>
+  </div>
+</div>
+
+<script>
+let scores=[0,0,0],currentRound=1,gameStarted=false,isSpinning=false,waitingForNext=false;
+const TOTAL_ROUNDS=5;
+function initDots(){const d=document.getElementById('roundDots');d.innerHTML='';for(let i=0;i<TOTAL_ROUNDS;i++){const el=document.createElement('div');el.className='round-dot'+(i===0?' current':'');d.appendChild(el);}}
+initDots();
+function updateRoundUI(){document.getElementById('roundText').textContent=`第 ${currentRound} / ${TOTAL_ROUNDS} 轮`;document.querySelectorAll('.round-dot').forEach((d,i)=>{d.className='round-dot';if(i<currentRound-1)d.classList.add('done');else if(i===currentRound-1)d.classList.add('current');});}
+function setScoreBtns(e){['n0','n1','n2','h0','h1','h2'].forEach(id=>document.getElementById(id).disabled=!e);}
+function addScore(idx,pts){scores[idx]+=pts;const el=document.getElementById('score'+idx);el.textContent=scores[idx];el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),300);}
+function handleAction(){if(!gameStarted){gameStarted=true;spin();}else if(waitingForNext){nextRound();}}
+function nextRound(){waitingForNext=false;setScoreBtns(false);if(currentRound>=TOTAL_ROUNDS){showFinal();return;}currentRound++;updateRoundUI();const btn=document.getElementById('actionBtn');btn.textContent='下一轮 →';btn.disabled=true;spin();}
+function showFinal(){const players=scores.map((s,i)=>({name:`玩家 ${i+1}`,score:s}));players.sort((a,b)=>b.score-a.score);const max=players[0].score;const c=document.getElementById('finalScores');c.innerHTML='';players.forEach(p=>{const row=document.createElement('div');row.className='final-row'+(p.score===max?' winner-row':'');row.innerHTML=`<div class="final-name">${p.name}</div><div class="final-score-val">${p.score} 分</div>`;c.appendChild(row);});for(let i=0;i<12;i++)setTimeout(()=>spawnStar(),i*80);document.getElementById('finalOverlay').classList.add('show');}
+function resetGame(){scores=[0,0,0];currentRound=1;gameStarted=false;waitingForNext=false;for(let i=0;i<3;i++)document.getElementById('score'+i).textContent='0';setScoreBtns(false);const btn=document.getElementById('actionBtn');btn.textContent='开始';btn.disabled=false;document.getElementById('finalOverlay').classList.remove('show');initDots();updateRoundUI();drawWheel(currentAngle);}
+const segments=[
+  {label:'同一事务所？',options:'是 / 否',emoji:'🏢',color:'#FF8CC8',textColor:'#fff'},
+  {label:'同一队伍？',options:'是 / 否',emoji:'🎵',color:'#4FC3F7',textColor:'#fff'},
+  {label:'花前还是花后？',options:'花前 / 花后',emoji:'🌸',color:'#FF6EB4',textColor:'#fff'},
+  {label:'拿着道具？',options:'是 / 否',emoji:'✨',color:'#81D4FA',textColor:'#fff'},
+  {label:'卡面打光？',options:'暖光 / 冷光',emoji:'💡',color:'#F48FB1',textColor:'#fff'},
+  {label:'卡色？',options:'冷色（蓝/绿）/ 暖色（红/黄）',emoji:'🎨',color:'#29B6F6',textColor:'#fff'},
+];
+const N=segments.length,arc=(2*Math.PI)/N;
+const canvas=document.getElementById('wheel'),ctx=canvas.getContext('2d'),size=600;
+canvas.width=size;canvas.height=size;
+let currentAngle=0;
+function drawWheel(angle){const cx=size/2,cy=size/2,r=size/2-4;ctx.clearRect(0,0,size,size);segments.forEach((seg,i)=>{const start=angle+i*arc-Math.PI/2,end=start+arc;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();ctx.fillStyle=seg.color;ctx.fill();ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r*0.95,start,end);ctx.closePath();ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+r*Math.cos(start),cy+r*Math.sin(start));ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;ctx.stroke();const mid=start+arc/2,ex=cx+r*0.72*Math.cos(mid),ey=cy+r*0.72*Math.sin(mid);ctx.save();ctx.translate(ex,ey);ctx.rotate(mid+Math.PI/2);ctx.font=`${size*0.07}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(seg.emoji,0,-size*0.12);ctx.font=`bold ${size*0.044}px 'Microsoft YaHei','微软雅黑',sans-serif`;ctx.fillStyle=seg.textColor;ctx.shadowColor='rgba(0,0,0,0.2)';ctx.shadowBlur=4;ctx.textAlign='center';const chars=seg.label.split(''),lines=[];for(let w=0;w<chars.length;w+=4)lines.push(chars.slice(w,w+4).join(''));const lh=size*0.052,totalH=(lines.length-1)*lh;lines.forEach((line,li)=>ctx.fillText(line,0,li*lh-totalH/2+size*0.01));ctx.restore();});ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=6;ctx.stroke();}
+drawWheel(0);
+function spin(){if(isSpinning)return;isSpinning=true;setScoreBtns(false);document.getElementById('actionBtn').disabled=true;const idx=Math.floor(Math.random()*N),base=-idx*arc-arc/2;let target=base;while(target<currentAngle+5*2*Math.PI)target+=2*Math.PI;const dur=2800,t0=performance.now(),sa=currentAngle,tr=target-sa;function ease(t){return 1-Math.pow(1-t,4);}function anim(now){const t=Math.min((now-t0)/dur,1);currentAngle=sa+tr*ease(t);drawWheel(currentAngle);if(t<1){requestAnimationFrame(anim);}else{currentAngle=target;isSpinning=false;showResult(idx);}}requestAnimationFrame(anim);}
+function showResult(idx){const seg=segments[idx];document.getElementById('resultEmoji').textContent=seg.emoji;document.getElementById('resultText').textContent=seg.label;document.getElementById('resultOptions').textContent=seg.options;for(let i=0;i<8;i++)setTimeout(()=>spawnStar(),i*80);setTimeout(()=>document.getElementById('resultOverlay').classList.add('show'),100);}
+function closeResult(){document.getElementById('resultOverlay').classList.remove('show');setScoreBtns(true);waitingForNext=true;const btn=document.getElementById('actionBtn');btn.textContent=currentRound>=TOTAL_ROUNDS?'查看结果':'下一轮 →';btn.disabled=false;}
+function spawnStar(){const s=document.createElement('div');s.className='star';s.textContent=['⭐','✨','💫','🌟'][Math.floor(Math.random()*4)];s.style.left=(20+Math.random()*60)+'vw';s.style.top=(30+Math.random()*40)+'vh';s.style.animationDelay=Math.random()*0.3+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),1200);}
+</script>
+</body>
+</html>
